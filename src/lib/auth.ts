@@ -10,6 +10,11 @@ import Google from 'next-auth/providers/google';
 import { getServiceSupabase } from '@/lib/db/supabase';
 import type { NextAuthConfig } from 'next-auth';
 import { v4 as uuidv4 } from 'uuid';
+import type { Database } from '@/lib/db/database.types';
+
+// Type aliases for Supabase inserts
+type UserInsert = Database['public']['Tables']['users']['Insert'];
+type CreditTransactionInsert = Database['public']['Tables']['credit_transactions']['Insert'];
 
 // Extend the built-in session types
 declare module 'next-auth' {
@@ -66,13 +71,14 @@ export const authConfig: NextAuthConfig = {
           const userId = user.id || uuidv4();
 
           // Create new user with 3 free credits
-          const { error } = await supabase.from('users').insert({
+          const newUser: UserInsert = {
             id: userId,
             email: user.email,
             name: user.name || null,
             avatar_url: user.image || null,
             credits_balance: 3, // Free credits for new users
-          });
+          };
+          const { error } = await supabase.from('users').insert(newUser);
 
           if (error) {
             console.error('Error creating user:', error);
@@ -80,13 +86,14 @@ export const authConfig: NextAuthConfig = {
           }
 
           // Log the bonus credit transaction
-          await supabase.from('credit_transactions').insert({
+          const creditTransaction: CreditTransactionInsert = {
             user_id: userId,
             amount: 3,
             balance_after: 3,
             type: 'bonus',
             description: 'Welcome bonus - 3 free credits',
-          });
+          };
+          await supabase.from('credit_transactions').insert(creditTransaction);
         } else {
           // Update existing user's info
           await supabase
