@@ -9,6 +9,7 @@ import NextAuth from 'next-auth';
 import Google from 'next-auth/providers/google';
 import { getServiceSupabase } from '@/lib/db/supabase';
 import type { NextAuthConfig } from 'next-auth';
+import { v4 as uuidv4 } from 'uuid';
 
 // Extend the built-in session types
 declare module 'next-auth' {
@@ -61,9 +62,12 @@ export const authConfig: NextAuthConfig = {
           .single();
 
         if (!existingUser) {
+          // Generate a UUID for the user if not provided
+          const userId = user.id || uuidv4();
+
           // Create new user with 3 free credits
           const { error } = await supabase.from('users').insert({
-            id: user.id,
+            id: userId,
             email: user.email,
             name: user.name || null,
             avatar_url: user.image || null,
@@ -77,7 +81,7 @@ export const authConfig: NextAuthConfig = {
 
           // Log the bonus credit transaction
           await supabase.from('credit_transactions').insert({
-            user_id: user.id,
+            user_id: userId,
             amount: 3,
             balance_after: 3,
             type: 'bonus',
