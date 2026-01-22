@@ -81,10 +81,14 @@ AI Song Creation Application with Voice Cloning - Create songs in YOUR voice.
 |-------|--------|-------------|
 | `/api/songs/generate` | POST | Generate song with ElevenLabs |
 | `/api/lyrics/generate` | POST | Generate lyrics with Gemini AI |
+| `/api/user/stats` | GET | User's song stats for dashboard |
 | `/api/admin/stats` | GET | System statistics |
 | `/api/admin/users` | GET | List all users |
 | `/api/admin/users/[id]/credits` | POST | Adjust user credits |
 | `/api/admin/songs` | GET | List all songs |
+| `/api/admin/prompts` | GET/POST | List/create system prompts |
+| `/api/admin/prompts/[id]` | PUT/DELETE | Update/delete a prompt |
+| `/api/admin/prompts/[id]/activate` | POST | Set prompt as active |
 
 ---
 
@@ -121,6 +125,34 @@ AI Song Creation Application with Voice Cloning - Create songs in YOUR voice.
 - Built songs overview page with status filtering
 - Added conditional admin nav item in sidebar
 - Saved project documentation
+
+### Session 4: Admin Prompts & UI Redesign
+- Added `system_prompts` table to Supabase (type, name, content, temperature, is_active)
+- Created CRUD API routes for prompt management (`/api/admin/prompts`)
+- Built admin prompts editor page with:
+  - Lyrics/Song prompt tabs
+  - Template variable reference
+  - Temperature slider (0.0 - 1.0)
+  - Activate/deactivate/edit/delete prompts
+  - Create new prompts
+- Updated lyrics generation to fetch active prompt from DB (with fallback)
+- Updated song generation to use DB-stored prompt template
+- Template variables: `{{topic}}`, `{{mood}}`, `{{genre}}`, `{{langInstruction}}`, etc.
+- Created beautiful landing page:
+  - Animated gradient background with floating blobs
+  - Hero section with gradient text
+  - Feature cards (AI Lyrics, Music Generation, Voice Cloning)
+  - How it works section (3 steps)
+  - Pricing preview (Free, Starter, Pro)
+  - CTA section and footer
+- Redesigned dashboard home:
+  - Gradient text welcome message
+  - Hover animations on action cards
+  - Real-time user stats from `/api/user/stats`
+  - Recent songs list with status badges
+- Added custom CSS animations (float, fade-in-up, shimmer)
+- Polished sidebar with gradient background
+- Added System Prompts to admin quick links (3-column grid)
 
 ---
 
@@ -161,8 +193,13 @@ const ADMIN_EMAILS = ['eladrefoua@gmail.com', 'new-admin@example.com'];
 | `src/lib/db/supabase.ts` | Supabase client (anon + service role) |
 | `src/lib/providers/elevenlabs.ts` | ElevenLabs music generation |
 | `src/middleware.ts` | Route protection middleware |
+| `src/app/page.tsx` | Landing page (hero, features, pricing) |
 | `src/app/dashboard/layout.tsx` | Dashboard sidebar layout |
+| `src/app/dashboard/page.tsx` | Dashboard home with stats |
 | `src/app/dashboard/create/page.tsx` | Song creation wizard |
+| `src/app/dashboard/admin/prompts/page.tsx` | Admin prompts editor |
+| `src/app/api/admin/prompts/route.ts` | Prompts CRUD API |
+| `src/app/api/user/stats/route.ts` | User dashboard stats |
 | `supabase/schema.sql` | Database schema |
 
 ---
