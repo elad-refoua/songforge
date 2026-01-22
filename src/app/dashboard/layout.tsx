@@ -87,7 +87,7 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen bg-gray-950 flex">
       {/* Sidebar */}
-      <aside className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col">
+      <aside className="w-64 bg-gradient-to-b from-gray-900 to-gray-950 border-r border-gray-800/50 flex flex-col">
         {/* Logo */}
         <div className="p-6 border-b border-gray-800">
           <Link href="/dashboard" className="flex items-center gap-3">

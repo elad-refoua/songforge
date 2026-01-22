@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
+import { getServiceSupabase } from '@/lib/db/supabase';
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,7 +15,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Topic is required' }, { status: 400 });
     }
 
-    // Build lyrics prompt
+    // Build template variables
     const langInstruction = language === 'hebrew' ? 'Write the lyrics in Hebrew.' :
       language === 'spanish' ? 'Write the lyrics in Spanish.' :
       language === 'french' ? 'Write the lyrics in French.' :
@@ -25,20 +26,50 @@ export async function POST(req: NextRequest) {
     const genreContext = genre ? `The genre is ${genre}.` : '';
     const notesContext = importantNotes ? `Important details to include: ${importantNotes}` : '';
 
-    const prompt = `You are a professional songwriter. Create song lyrics with proper structure (verses, chorus, bridge). Use [Verse 1], [Chorus], [Verse 2], [Bridge] markers. The lyrics should be creative, emotional, and fitting for the genre and mood.
+    // Fetch active lyrics prompt from database
+    let promptTemplate = '';
+    let temperature = 0.8;
 
-Write song lyrics about: ${topic}
+    try {
+      const supabase = getServiceSupabase();
+      const { data: activePrompt } = await (supabase.from('system_prompts') as any)
+        .select('content, temperature')
+        .eq('type', 'lyrics')
+        .eq('is_active', true)
+        .single();
 
-${langInstruction}
-${purposeContext}
-${moodContext}
-${genreContext}
-${notesContext}
+      if (activePrompt) {
+        promptTemplate = activePrompt.content;
+        temperature = activePrompt.temperature;
+      }
+    } catch {}
+
+    // Fallback to default prompt if no active prompt found
+    if (!promptTemplate) {
+      promptTemplate = `You are a professional songwriter. Create song lyrics with proper structure (verses, chorus, bridge). Use [Verse 1], [Chorus], [Verse 2], [Bridge] markers. The lyrics should be creative, emotional, and fitting for the genre and mood.
+
+Write song lyrics about: {{topic}}
+
+{{langInstruction}}
+{{purposeContext}}
+{{moodContext}}
+{{genreContext}}
+{{notesContext}}
 
 Format the lyrics with section markers like [Verse 1], [Chorus], etc. Also suggest a title for the song.
 
 Respond in this exact JSON format:
 {"title": "Song Title Here", "lyrics": "full lyrics with section markers"}`;
+    }
+
+    // Replace template variables
+    const prompt = promptTemplate
+      .replace(/\{\{topic\}\}/g, topic)
+      .replace(/\{\{langInstruction\}\}/g, langInstruction)
+      .replace(/\{\{purposeContext\}\}/g, purposeContext)
+      .replace(/\{\{moodContext\}\}/g, moodContext)
+      .replace(/\{\{genreContext\}\}/g, genreContext)
+      .replace(/\{\{notesContext\}\}/g, notesContext);
 
     const geminiKey = process.env.GEMINI_API_KEY;
 
@@ -58,7 +89,7 @@ Respond in this exact JSON format:
               },
             ],
             generationConfig: {
-              temperature: 0.8,
+              temperature,
               responseMimeType: 'application/json',
             },
           }),

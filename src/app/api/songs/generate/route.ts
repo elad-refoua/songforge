@@ -33,16 +33,44 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No credits remaining' }, { status: 402 });
     }
 
-    // Build the prompt for ElevenLabs
-    const promptParts = [
-      `A ${mood} ${genre} song`,
-      `about ${topic}`,
-      language !== 'english' ? `in ${language}` : '',
-      tempo === 'slow' ? 'at a slow tempo' : tempo === 'fast' ? 'at a fast tempo' : '',
-      importantNotes ? `incorporating: ${importantNotes}` : '',
-    ].filter(Boolean);
+    // Fetch active song prompt from database
+    let songPromptTemplate = '';
+    try {
+      const { data: activePrompt } = await (supabase.from('system_prompts') as any)
+        .select('content')
+        .eq('type', 'song')
+        .eq('is_active', true)
+        .single();
+      if (activePrompt) {
+        songPromptTemplate = activePrompt.content;
+      }
+    } catch {}
 
-    let fullPrompt = promptParts.join(', ');
+    // Build the prompt for ElevenLabs
+    let fullPrompt: string;
+    const languageContext = language !== 'english' ? `in ${language}` : '';
+    const tempoContext = tempo === 'slow' ? 'at a slow tempo' : tempo === 'fast' ? 'at a fast tempo' : '';
+    const notesContext = importantNotes ? `incorporating: ${importantNotes}` : '';
+
+    if (songPromptTemplate) {
+      fullPrompt = songPromptTemplate
+        .replace(/\{\{mood\}\}/g, mood || '')
+        .replace(/\{\{genre\}\}/g, genre || '')
+        .replace(/\{\{topic\}\}/g, topic || '')
+        .replace(/\{\{languageContext\}\}/g, languageContext)
+        .replace(/\{\{tempoContext\}\}/g, tempoContext)
+        .replace(/\{\{notesContext\}\}/g, notesContext);
+    } else {
+      const promptParts = [
+        `A ${mood} ${genre} song`,
+        `about ${topic}`,
+        languageContext,
+        tempoContext,
+        notesContext,
+      ].filter(Boolean);
+      fullPrompt = promptParts.join(', ');
+    }
+
     if (lyrics) {
       fullPrompt += `\n\nLyrics:\n${lyrics}`;
     }

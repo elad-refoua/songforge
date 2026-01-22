@@ -201,7 +201,7 @@ export default function AdminPage() {
       </Card>
 
       {/* Quick Links */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <Link href="/dashboard/admin/users">
           <Card className="bg-gray-900 border-gray-800 hover:border-purple-500/50 transition-colors cursor-pointer">
             <CardHeader>
@@ -229,6 +229,21 @@ export default function AdminPage() {
             </CardHeader>
             <CardContent>
               <p className="text-gray-400 text-sm">View all generated songs across all users</p>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/dashboard/admin/prompts">
+          <Card className="bg-gray-900 border-gray-800 hover:border-purple-500/50 transition-colors cursor-pointer">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                System Prompts
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-400 text-sm">Edit AI prompts for lyrics and song generation</p>
             </CardContent>
           </Card>
         </Link>
