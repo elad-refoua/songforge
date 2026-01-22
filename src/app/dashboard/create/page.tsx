@@ -67,6 +67,7 @@ type LyricsMode = 'ai' | 'manual';
 interface WizardData {
   topic: string;
   language: string;
+  customLanguage: string;
   purpose: string;
   importantNotes: string;
   genre: string;
@@ -88,6 +89,7 @@ export default function CreateSongPage() {
   const [data, setData] = useState<WizardData>({
     topic: '',
     language: 'english',
+    customLanguage: '',
     purpose: '',
     importantNotes: '',
     genre: '',
@@ -114,6 +116,10 @@ export default function CreateSongPage() {
     }
   };
 
+  const getEffectiveLanguage = () => {
+    return data.language === 'other' ? (data.customLanguage || 'english') : data.language;
+  };
+
   const handleGenerateLyrics = async () => {
     setIsGeneratingLyrics(true);
     setError(null);
@@ -123,7 +129,7 @@ export default function CreateSongPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           topic: data.topic,
-          language: data.language,
+          language: getEffectiveLanguage(),
           purpose: data.purpose,
           importantNotes: data.importantNotes,
           genre: data.genre,
@@ -151,7 +157,7 @@ export default function CreateSongPage() {
       const res = await fetch('/api/songs/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, language: getEffectiveLanguage() }),
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || 'Failed to generate song');
@@ -251,6 +257,16 @@ export default function CreateSongPage() {
                   </button>
                 ))}
               </div>
+              {data.language === 'other' && (
+                <div className="mt-4">
+                  <Input
+                    placeholder="Type your language (e.g., Arabic, Russian, German...)"
+                    value={data.customLanguage}
+                    onChange={(e) => updateData({ customLanguage: e.target.value })}
+                    className="bg-gray-800 border-gray-700 text-white"
+                  />
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -500,7 +516,7 @@ export default function CreateSongPage() {
                 </div>
                 <div>
                   <span className="text-gray-400 text-sm">Language</span>
-                  <p className="text-white capitalize">{data.language}</p>
+                  <p className="text-white capitalize">{data.language === 'other' ? (data.customLanguage || 'Other') : data.language}</p>
                 </div>
                 <div>
                   <span className="text-gray-400 text-sm">Purpose</span>

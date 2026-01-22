@@ -16,10 +16,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Build template variables
-    const langInstruction = language === 'hebrew' ? 'Write the lyrics in Hebrew.' :
-      language === 'spanish' ? 'Write the lyrics in Spanish.' :
-      language === 'french' ? 'Write the lyrics in French.' :
-      'Write the lyrics in English.';
+    const knownLangs: Record<string, string> = {
+      english: 'English', hebrew: 'Hebrew', spanish: 'Spanish', french: 'French',
+    };
+    const langName = knownLangs[language] || language;
+    const langInstruction = `Write the lyrics in ${langName}.`;
 
     const purposeContext = purpose ? `The song is for a ${purpose} occasion.` : '';
     const moodContext = mood ? `The mood should be ${mood}.` : '';
