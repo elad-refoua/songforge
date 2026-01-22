@@ -25,9 +25,9 @@ export async function POST(req: NextRequest) {
     const genreContext = genre ? `The genre is ${genre}.` : '';
     const notesContext = importantNotes ? `Important details to include: ${importantNotes}` : '';
 
-    const systemPrompt = `You are a professional songwriter. Create song lyrics with proper structure (verses, chorus, bridge). Use [Verse 1], [Chorus], [Verse 2], [Bridge] markers. The lyrics should be creative, emotional, and fitting for the genre and mood.`;
+    const prompt = `You are a professional songwriter. Create song lyrics with proper structure (verses, chorus, bridge). Use [Verse 1], [Chorus], [Verse 2], [Bridge] markers. The lyrics should be creative, emotional, and fitting for the genre and mood.
 
-    const userPrompt = `Write song lyrics about: ${topic}
+Write song lyrics about: ${topic}
 
 ${langInstruction}
 ${purposeContext}
@@ -40,36 +40,43 @@ Format the lyrics with section markers like [Verse 1], [Chorus], etc. Also sugge
 Respond in this exact JSON format:
 {"title": "Song Title Here", "lyrics": "full lyrics with section markers"}`;
 
-    // Use ElevenLabs or fall back to a simple generation
-    // For now, using a built-in approach without OpenAI dependency
-    const openaiKey = process.env.OPENAI_API_KEY;
+    const geminiKey = process.env.GEMINI_API_KEY;
 
-    if (openaiKey) {
-      // Use OpenAI for lyrics generation
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${openaiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt },
-          ],
-          temperature: 0.8,
-          response_format: { type: 'json_object' },
-        }),
-      });
+    if (geminiKey) {
+      // Use Gemini for lyrics generation
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [{ text: prompt }],
+              },
+            ],
+            generationConfig: {
+              temperature: 0.8,
+              responseMimeType: 'application/json',
+            },
+          }),
+        }
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+        throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
-      const content = data.choices[0]?.message?.content;
+      const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (!content) {
+        throw new Error('No content returned from Gemini');
+      }
+
       const parsed = JSON.parse(content);
 
       return NextResponse.json({

@@ -168,6 +168,12 @@ export default function CreateSongPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-white mb-2">Create New Song</h1>
         <p className="text-gray-400">Follow the steps to create your AI-generated song</p>
+        <div className="mt-3 flex items-center gap-2 bg-blue-500/10 border border-blue-500/30 rounded-lg px-4 py-2">
+          <span className="text-blue-400 text-lg">&#9998;</span>
+          <span className="text-blue-300 text-sm">
+            Got your own lyrics? You can paste or write them in Step 3, or let AI generate them for you!
+          </span>
+        </div>
       </div>
 
       {/* Progress Bar */}
