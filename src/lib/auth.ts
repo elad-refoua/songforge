@@ -8,6 +8,7 @@
 import NextAuth from 'next-auth';
 import Google from 'next-auth/providers/google';
 import { getServiceSupabase } from '@/lib/db/supabase';
+import { isAdmin } from '@/lib/admin';
 import type { NextAuthConfig } from 'next-auth';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -20,6 +21,7 @@ declare module 'next-auth' {
       name?: string | null;
       image?: string | null;
       creditsBalance: number;
+      isAdmin: boolean;
     };
   }
 
@@ -114,6 +116,9 @@ export const authConfig: NextAuthConfig = {
         token.id = user.id;
       }
 
+      // Set admin flag
+      token.isAdmin = isAdmin(token.email as string);
+
       // Refresh user data on session update
       if (trigger === 'update' || trigger === 'signIn') {
         try {
@@ -142,6 +147,7 @@ export const authConfig: NextAuthConfig = {
       if (token && session.user) {
         session.user.id = token.id as string;
         session.user.creditsBalance = (token.creditsBalance as number) || 0;
+        session.user.isAdmin = (token.isAdmin as boolean) || false;
       }
       return session;
     },
@@ -152,7 +158,16 @@ export const authConfig: NextAuthConfig = {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
       const isOnDashboard = nextUrl.pathname.startsWith('/dashboard');
+      const isAdminRoute = nextUrl.pathname.startsWith('/dashboard/admin');
       const isOnAuth = nextUrl.pathname.startsWith('/login') || nextUrl.pathname.startsWith('/signup');
+
+      if (isAdminRoute) {
+        if (!isLoggedIn) return false;
+        if (!isAdmin(auth?.user?.email)) {
+          return Response.redirect(new URL('/dashboard', nextUrl));
+        }
+        return true;
+      }
 
       if (isOnDashboard) {
         if (isLoggedIn) return true;
