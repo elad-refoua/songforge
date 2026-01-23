@@ -31,19 +31,21 @@ export async function POST(req: NextRequest) {
     let promptTemplate = '';
     let temperature = 0.8;
 
-    try {
-      const supabase = getServiceSupabase();
-      const { data: activePrompt } = await (supabase.from('system_prompts') as any)
-        .select('content, temperature')
-        .eq('type', 'lyrics')
-        .eq('is_active', true)
-        .single();
+    const supabase = getServiceSupabase();
+    const { data: activePrompt, error: promptError } = await (supabase.from('system_prompts') as any)
+      .select('content, temperature')
+      .eq('type', 'lyrics')
+      .eq('is_active', true)
+      .maybeSingle();
 
-      if (activePrompt) {
-        promptTemplate = activePrompt.content;
-        temperature = activePrompt.temperature;
-      }
-    } catch {}
+    if (promptError) {
+      console.error('Failed to fetch active lyrics prompt:', promptError);
+    }
+
+    if (activePrompt) {
+      promptTemplate = activePrompt.content;
+      temperature = activePrompt.temperature;
+    }
 
     // Fallback to default prompt if no active prompt found
     if (!promptTemplate) {

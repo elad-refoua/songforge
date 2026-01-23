@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 
 // Step definitions
-const STEPS = ['Topic', 'Style', 'Lyrics', 'Generate'];
+const STEPS = ['Topic', 'Style', 'Lyrics', 'Voice', 'Generate'];
 
 const purposes = [
   { id: 'birthday', label: 'Birthday', emoji: '🎂' },
@@ -63,6 +63,14 @@ const tempos = [
 ];
 
 type LyricsMode = 'ai' | 'manual';
+type VoiceMode = 'ai_default' | 'my_voice';
+
+interface VoiceProfile {
+  id: string;
+  name: string;
+  status: string;
+  is_default: boolean;
+}
 
 interface WizardData {
   topic: string;
@@ -76,6 +84,8 @@ interface WizardData {
   lyricsMode: LyricsMode;
   lyrics: string;
   title: string;
+  voiceMode: VoiceMode;
+  voiceProfileId: string;
 }
 
 export default function CreateSongPage() {
@@ -85,6 +95,9 @@ export default function CreateSongPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingLyrics, setIsGeneratingLyrics] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [generationStatus, setGenerationStatus] = useState<string>('');
+  const [voices, setVoices] = useState<VoiceProfile[]>([]);
+  const [loadingVoices, setLoadingVoices] = useState(false);
 
   const [data, setData] = useState<WizardData>({
     topic: '',
@@ -98,9 +111,36 @@ export default function CreateSongPage() {
     lyricsMode: 'ai',
     lyrics: '',
     title: '',
+    voiceMode: 'ai_default',
+    voiceProfileId: '',
   });
 
   const creditsBalance = session?.user?.creditsBalance ?? 0;
+
+  // Fetch voices when reaching the voice step
+  useEffect(() => {
+    if (step === 3 && voices.length === 0) {
+      fetchVoices();
+    }
+  }, [step]);
+
+  const fetchVoices = async () => {
+    setLoadingVoices(true);
+    try {
+      const res = await fetch('/api/voices');
+      const result = await res.json();
+      if (res.ok) {
+        const readyVoices = (result.voices || []).filter((v: VoiceProfile) => v.status === 'ready');
+        setVoices(readyVoices);
+        // Auto-select default voice if exists
+        const defaultVoice = readyVoices.find((v: VoiceProfile) => v.is_default);
+        if (defaultVoice) {
+          updateData({ voiceProfileId: defaultVoice.id, voiceMode: 'my_voice' });
+        }
+      }
+    } catch {}
+    setLoadingVoices(false);
+  };
 
   const updateData = (updates: Partial<WizardData>) => {
     setData(prev => ({ ...prev, ...updates }));
@@ -111,7 +151,8 @@ export default function CreateSongPage() {
       case 0: return data.topic.trim().length > 0 && data.language && data.purpose;
       case 1: return data.genre;
       case 2: return data.lyricsMode === 'ai' || data.lyrics.trim().length > 0;
-      case 3: return true;
+      case 3: return data.voiceMode === 'ai_default' || data.voiceProfileId;
+      case 4: return true;
       default: return false;
     }
   };
@@ -153,11 +194,17 @@ export default function CreateSongPage() {
     }
     setIsGenerating(true);
     setError(null);
+    setGenerationStatus('Starting song generation...');
+
     try {
       const res = await fetch('/api/songs/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, language: getEffectiveLanguage() }),
+        body: JSON.stringify({
+          ...data,
+          language: getEffectiveLanguage(),
+          voiceProfileId: data.voiceMode === 'my_voice' ? data.voiceProfileId : null,
+        }),
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || 'Failed to generate song');
@@ -165,6 +212,7 @@ export default function CreateSongPage() {
     } catch (err: any) {
       setError(err.message);
       setIsGenerating(false);
+      setGenerationStatus('');
     }
   };
 
@@ -183,7 +231,7 @@ export default function CreateSongPage() {
       </div>
 
       {/* Progress Bar */}
-      <div className="flex items-center mb-8 gap-2">
+      <div className="flex items-center mb-8 gap-1">
         {STEPS.map((label, i) => (
           <div key={label} className="flex items-center flex-1">
             <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${
@@ -193,11 +241,11 @@ export default function CreateSongPage() {
             }`}>
               {i < step ? '✓' : i + 1}
             </div>
-            <span className={`ml-2 text-sm hidden md:inline ${
+            <span className={`ml-1.5 text-sm hidden md:inline ${
               i === step ? 'text-white font-medium' : 'text-gray-500'
             }`}>{label}</span>
             {i < STEPS.length - 1 && (
-              <div className={`flex-1 h-0.5 mx-3 ${i < step ? 'bg-green-500' : 'bg-gray-700'}`} />
+              <div className={`flex-1 h-0.5 mx-2 ${i < step ? 'bg-green-500' : 'bg-gray-700'}`} />
             )}
           </div>
         ))}
@@ -498,8 +546,124 @@ export default function CreateSongPage() {
         </div>
       )}
 
-      {/* Step 4: Review & Generate */}
+      {/* Step 4: Voice Selection */}
       {step === 3 && (
+        <div className="space-y-6">
+          <Card className="bg-gray-900 border-gray-800">
+            <CardHeader>
+              <CardTitle className="text-white">Voice</CardTitle>
+              <CardDescription className="text-gray-400">
+                Choose the voice for your song
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <button
+                  onClick={() => updateData({ voiceMode: 'ai_default', voiceProfileId: '' })}
+                  className={`p-4 rounded-lg border-2 transition-all text-center ${
+                    data.voiceMode === 'ai_default'
+                      ? 'border-purple-500 bg-purple-500/20'
+                      : 'border-gray-700 hover:border-gray-600 bg-gray-800'
+                  }`}
+                >
+                  <div className="text-3xl mb-2">🎵</div>
+                  <span className="text-white font-medium block">AI Voice</span>
+                  <span className="text-gray-400 text-xs">Use the default AI singing voice</span>
+                </button>
+                <button
+                  onClick={() => {
+                    const defaultVoice = voices.find(v => v.is_default) || voices[0];
+                    updateData({
+                      voiceMode: 'my_voice',
+                      voiceProfileId: defaultVoice?.id || '',
+                    });
+                  }}
+                  disabled={voices.length === 0}
+                  className={`p-4 rounded-lg border-2 transition-all text-center ${
+                    data.voiceMode === 'my_voice'
+                      ? 'border-purple-500 bg-purple-500/20'
+                      : voices.length === 0
+                        ? 'border-gray-800 bg-gray-800/50 cursor-not-allowed opacity-50'
+                        : 'border-gray-700 hover:border-gray-600 bg-gray-800'
+                  }`}
+                >
+                  <div className="text-3xl mb-2">🎤</div>
+                  <span className="text-white font-medium block">My Voice</span>
+                  <span className="text-gray-400 text-xs">
+                    {voices.length === 0 ? 'No voice profiles yet' : 'Use your cloned voice'}
+                  </span>
+                </button>
+              </div>
+
+              {data.voiceMode === 'my_voice' && (
+                <div>
+                  {loadingVoices ? (
+                    <p className="text-gray-400 text-sm">Loading voices...</p>
+                  ) : voices.length > 0 ? (
+                    <div className="space-y-2">
+                      <label className="text-sm text-gray-400">Select voice profile:</label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {voices.map((voice) => (
+                          <button
+                            key={voice.id}
+                            onClick={() => updateData({ voiceProfileId: voice.id })}
+                            className={`p-3 rounded-lg border-2 transition-all text-left ${
+                              data.voiceProfileId === voice.id
+                                ? 'border-purple-500 bg-purple-500/20'
+                                : 'border-gray-700 hover:border-gray-600 bg-gray-800'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                                </svg>
+                              </div>
+                              <div>
+                                <span className="text-white text-sm font-medium block">{voice.name}</span>
+                                {voice.is_default && (
+                                  <span className="text-purple-400 text-xs">Default</span>
+                                )}
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-gray-400 text-sm mb-3">
+                        You haven&apos;t created any voice profiles yet.
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => router.push('/dashboard/voices')}
+                        className="border-purple-500 text-purple-400"
+                      >
+                        Go to Voices
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {data.voiceMode === 'my_voice' && (
+            <Card className="bg-blue-500/10 border-blue-500/30">
+              <CardContent className="p-4">
+                <p className="text-blue-300 text-sm">
+                  Your song will be generated with AI vocals first, then converted to your voice using voice cloning technology. This may add extra processing time.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* Step 5: Review & Generate */}
+      {step === 4 && (
         <div className="space-y-6">
           <Card className="bg-gray-900 border-gray-800">
             <CardHeader>
@@ -533,6 +697,14 @@ export default function CreateSongPage() {
                 <div>
                   <span className="text-gray-400 text-sm">Tempo</span>
                   <p className="text-white capitalize">{data.tempo}</p>
+                </div>
+                <div>
+                  <span className="text-gray-400 text-sm">Voice</span>
+                  <p className="text-white">
+                    {data.voiceMode === 'ai_default'
+                      ? 'AI Default'
+                      : voices.find(v => v.id === data.voiceProfileId)?.name || 'My Voice'}
+                  </p>
                 </div>
               </div>
               {data.importantNotes && (
@@ -572,11 +744,14 @@ export default function CreateSongPage() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      Generating Song...
+                      Generating...
                     </span>
                   ) : 'Generate Song'}
                 </Button>
               </div>
+              {generationStatus && isGenerating && (
+                <p className="text-purple-300 text-sm mt-3">{generationStatus}</p>
+              )}
             </CardContent>
           </Card>
         </div>
