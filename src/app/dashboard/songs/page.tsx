@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { Suspense, useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,14 @@ interface Song {
 }
 
 export default function SongsPage() {
+  return (
+    <Suspense fallback={<div className="p-8 flex items-center justify-center min-h-[400px]"><div className="text-gray-400">Loading songs...</div></div>}>
+      <SongsContent />
+    </Suspense>
+  );
+}
+
+function SongsContent() {
   const searchParams = useSearchParams();
   const newSongId = searchParams.get('new');
   const [songs, setSongs] = useState<Song[]>([]);
