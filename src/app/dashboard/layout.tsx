@@ -13,6 +13,8 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { AudioPlayer } from '@/components/audio-player';
+import { usePlayerStore } from '@/stores/playerStore';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -81,6 +83,7 @@ export default function DashboardLayout({
   const { data: session, status } = useSession();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const currentSong = usePlayerStore((s) => s.currentSong);
 
   const handleSignOut = () => {
     signOut({ callbackUrl: '/login' });
@@ -294,9 +297,12 @@ export default function DashboardLayout({
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto pt-14 md:pt-0">
+      <main className={cn("flex-1 overflow-auto pt-14 md:pt-0", currentSong && "pb-20")}>
         {children}
       </main>
+
+      {/* Persistent audio player */}
+      <AudioPlayer />
     </div>
   );
 }

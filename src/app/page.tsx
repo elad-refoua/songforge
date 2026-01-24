@@ -14,9 +14,9 @@ export default async function HomePage() {
       {/* Animated background */}
       <div className="fixed inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-gray-950 to-blue-900/20" />
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-float" />
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl animate-float-delayed" />
-        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-pink-500/5 rounded-full blur-3xl animate-float-slow" />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-2xl animate-float" />
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-500/10 rounded-full blur-2xl animate-float-delayed" />
+        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-pink-500/5 rounded-full blur-2xl animate-float-slow" />
       </div>
 
       {/* Header */}
@@ -45,16 +45,15 @@ export default async function HomePage() {
             AI-Powered Music Creation
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight animate-fade-in-up">
-            Create Songs in
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight animate-fade-in-up">
+            Your Song in
             <span className="block bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
-              YOUR Voice
+              60 Seconds
             </span>
           </h1>
 
-          <p className="text-lg md:text-xl text-gray-400 max-w-2xl mb-10 animate-fade-in-up-delayed">
-            Transform your ideas into professional songs with AI. Write lyrics, choose your style,
-            and generate music in seconds.
+          <p className="text-lg md:text-xl text-gray-400 max-w-xl mb-10 animate-fade-in-up-delayed">
+            No music experience needed. Just describe what you want.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 animate-fade-in-up-delayed-2">
@@ -62,7 +61,7 @@ export default async function HomePage() {
               href="/login"
               className="px-8 py-4 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 rounded-full text-lg font-semibold transition-all hover:scale-105 hover:shadow-lg hover:shadow-purple-500/25"
             >
-              Create Your First Song
+              Get Started Free
             </Link>
             <a
               href="#how-it-works"
@@ -91,12 +90,9 @@ export default async function HomePage() {
 
         {/* Features Section */}
         <section className="px-6 py-24 max-w-6xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
-            Everything You Need to Create Music
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
+            What You Get
           </h2>
-          <p className="text-gray-400 text-center max-w-2xl mx-auto mb-16">
-            From lyrics to full production, SongForge handles it all with cutting-edge AI technology.
-          </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="group p-8 bg-gradient-to-b from-gray-900 to-gray-900/50 border border-gray-800 rounded-2xl hover:border-purple-500/50 transition-all hover:-translate-y-1">
@@ -105,8 +101,8 @@ export default async function HomePage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-white mb-3">AI Lyrics Writer</h3>
-              <p className="text-gray-400">Generate creative, structured lyrics with Gemini AI or write your own. Supports multiple languages.</p>
+              <h3 className="text-xl font-semibold text-white mb-2">AI Lyrics</h3>
+              <p className="text-gray-400 text-sm">Tell us what the song is about - AI writes the words.</p>
             </div>
 
             <div className="group p-8 bg-gradient-to-b from-gray-900 to-gray-900/50 border border-gray-800 rounded-2xl hover:border-blue-500/50 transition-all hover:-translate-y-1">
@@ -115,8 +111,8 @@ export default async function HomePage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-white mb-3">Music Generation</h3>
-              <p className="text-gray-400">Professional-quality music powered by ElevenLabs. Choose from 12+ genres and multiple moods.</p>
+              <h3 className="text-xl font-semibold text-white mb-2">Real Music</h3>
+              <p className="text-gray-400 text-sm">Full production with vocals, instruments, and your chosen genre.</p>
             </div>
 
             <div className="group p-8 bg-gradient-to-b from-gray-900 to-gray-900/50 border border-gray-800 rounded-2xl hover:border-pink-500/50 transition-all hover:-translate-y-1">
@@ -125,8 +121,8 @@ export default async function HomePage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-white mb-3">Voice Cloning</h3>
-              <p className="text-gray-400">Coming soon: Clone your voice and create songs that sound like you. Sing without singing.</p>
+              <h3 className="text-xl font-semibold text-white mb-2">Your Voice</h3>
+              <p className="text-gray-400 text-sm">Clone your voice and the song sounds like you sang it.</p>
             </div>
           </div>
         </section>
@@ -142,8 +138,8 @@ export default async function HomePage() {
               <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6 text-2xl font-bold">
                 1
               </div>
-              <h3 className="text-lg font-semibold mb-2">Describe Your Song</h3>
-              <p className="text-gray-400 text-sm">Tell us the topic, language, and occasion. Add any important details you want included.</p>
+              <h3 className="text-lg font-semibold mb-2">Describe It</h3>
+              <p className="text-gray-400 text-sm">What's the song about? Who's it for?</p>
               <div className="hidden md:block absolute top-8 left-[60%] w-[80%] h-px bg-gradient-to-r from-purple-500/50 to-transparent" />
             </div>
 
@@ -151,8 +147,8 @@ export default async function HomePage() {
               <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 text-2xl font-bold">
                 2
               </div>
-              <h3 className="text-lg font-semibold mb-2">Choose Your Style</h3>
-              <p className="text-gray-400 text-sm">Pick a genre, mood, and tempo. Generate AI lyrics or write your own words.</p>
+              <h3 className="text-lg font-semibold mb-2">Pick a Style</h3>
+              <p className="text-gray-400 text-sm">Genre, mood, tempo - just tap what feels right.</p>
               <div className="hidden md:block absolute top-8 left-[60%] w-[80%] h-px bg-gradient-to-r from-blue-500/50 to-transparent" />
             </div>
 
@@ -160,8 +156,8 @@ export default async function HomePage() {
               <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl flex items-center justify-center mx-auto mb-6 text-2xl font-bold">
                 3
               </div>
-              <h3 className="text-lg font-semibold mb-2">Generate & Enjoy</h3>
-              <p className="text-gray-400 text-sm">Click generate and get a professional song in seconds. Download or share with friends.</p>
+              <h3 className="text-lg font-semibold mb-2">Get Your Song</h3>
+              <p className="text-gray-400 text-sm">Hit generate. Download and share.</p>
             </div>
           </div>
         </section>

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 
@@ -95,7 +95,6 @@ export default function CreateSongPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingLyrics, setIsGeneratingLyrics] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [generationStatus, setGenerationStatus] = useState<string>('');
   const [voices, setVoices] = useState<VoiceProfile[]>([]);
   const [loadingVoices, setLoadingVoices] = useState(false);
 
@@ -194,7 +193,6 @@ export default function CreateSongPage() {
     }
     setIsGenerating(true);
     setError(null);
-    setGenerationStatus('Starting song generation...');
 
     try {
       const res = await fetch('/api/songs/generate', {
@@ -212,7 +210,6 @@ export default function CreateSongPage() {
     } catch (err: any) {
       setError(err.message);
       setIsGenerating(false);
-      setGenerationStatus('');
     }
   };
 
@@ -265,10 +262,7 @@ export default function CreateSongPage() {
         <div className="space-y-6">
           <Card className="bg-gray-900 border-gray-800">
             <CardHeader>
-              <CardTitle className="text-white">What is the song about?</CardTitle>
-              <CardDescription className="text-gray-400">
-                Describe the topic or story of your song
-              </CardDescription>
+              <CardTitle className="text-white">Tell us about your song</CardTitle>
             </CardHeader>
             <CardContent>
               <Textarea
@@ -284,9 +278,6 @@ export default function CreateSongPage() {
           <Card className="bg-gray-900 border-gray-800">
             <CardHeader>
               <CardTitle className="text-white">Language</CardTitle>
-              <CardDescription className="text-gray-400">
-                What language should the song be in?
-              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -320,10 +311,7 @@ export default function CreateSongPage() {
 
           <Card className="bg-gray-900 border-gray-800">
             <CardHeader>
-              <CardTitle className="text-white">Purpose</CardTitle>
-              <CardDescription className="text-gray-400">
-                What is the song for?
-              </CardDescription>
+              <CardTitle className="text-white">What's the occasion?</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -347,10 +335,7 @@ export default function CreateSongPage() {
 
           <Card className="bg-gray-900 border-gray-800">
             <CardHeader>
-              <CardTitle className="text-white">Important Details</CardTitle>
-              <CardDescription className="text-gray-400">
-                Anything specific you want included? Names, phrases, themes?
-              </CardDescription>
+              <CardTitle className="text-white">Any special requests?</CardTitle>
             </CardHeader>
             <CardContent>
               <Textarea
@@ -371,7 +356,6 @@ export default function CreateSongPage() {
           <Card className="bg-gray-900 border-gray-800">
             <CardHeader>
               <CardTitle className="text-white">Genre</CardTitle>
-              <CardDescription className="text-gray-400">Choose a musical style</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -379,13 +363,12 @@ export default function CreateSongPage() {
                   <button
                     key={genre.id}
                     onClick={() => updateData({ genre: genre.id })}
-                    className={`p-4 rounded-lg border-2 transition-all ${
+                    className={`p-4 rounded-xl transition-all ${
                       data.genre === genre.id
-                        ? 'border-purple-500 bg-purple-500/20'
-                        : 'border-gray-700 hover:border-gray-600 bg-gray-800'
+                        ? `bg-gradient-to-br ${genre.color} shadow-lg scale-105 border-2 border-white/20`
+                        : 'border-2 border-gray-700 hover:border-gray-600 bg-gray-800 hover:scale-102'
                     }`}
                   >
-                    <div className={`w-8 h-8 rounded-full bg-gradient-to-r ${genre.color} mb-2`} />
                     <span className="text-white font-medium">{genre.name}</span>
                   </button>
                 ))}
@@ -396,7 +379,6 @@ export default function CreateSongPage() {
           <Card className="bg-gray-900 border-gray-800">
             <CardHeader>
               <CardTitle className="text-white">Mood</CardTitle>
-              <CardDescription className="text-gray-400">How should the song feel?</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -404,13 +386,13 @@ export default function CreateSongPage() {
                   <button
                     key={m.id}
                     onClick={() => updateData({ mood: m.id })}
-                    className={`p-3 rounded-lg border-2 transition-all text-center ${
+                    className={`p-3 rounded-xl transition-all text-center ${
                       data.mood === m.id
-                        ? 'border-purple-500 bg-purple-500/20'
-                        : 'border-gray-700 hover:border-gray-600 bg-gray-800'
+                        ? 'border-2 border-purple-500 bg-purple-500/20 scale-105'
+                        : 'border-2 border-gray-700 hover:border-gray-600 bg-gray-800'
                     }`}
                   >
-                    <div className="text-2xl mb-1">{m.emoji}</div>
+                    <div className="text-3xl mb-1">{m.emoji}</div>
                     <span className="text-white text-sm">{m.label}</span>
                   </button>
                 ))}
@@ -421,7 +403,6 @@ export default function CreateSongPage() {
           <Card className="bg-gray-900 border-gray-800">
             <CardHeader>
               <CardTitle className="text-white">Tempo</CardTitle>
-              <CardDescription className="text-gray-400">How fast should it be?</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-3 gap-3">
@@ -451,9 +432,6 @@ export default function CreateSongPage() {
           <Card className="bg-gray-900 border-gray-800">
             <CardHeader>
               <CardTitle className="text-white">Lyrics</CardTitle>
-              <CardDescription className="text-gray-400">
-                Choose how you want to create your lyrics
-              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-4 mb-6">
@@ -531,8 +509,7 @@ export default function CreateSongPage() {
 
           <Card className="bg-gray-900 border-gray-800">
             <CardHeader>
-              <CardTitle className="text-white">Song Title</CardTitle>
-              <CardDescription className="text-gray-400">Give your song a name (optional)</CardDescription>
+              <CardTitle className="text-white">Song Title (optional)</CardTitle>
             </CardHeader>
             <CardContent>
               <Input
@@ -552,9 +529,6 @@ export default function CreateSongPage() {
           <Card className="bg-gray-900 border-gray-800">
             <CardHeader>
               <CardTitle className="text-white">Voice</CardTitle>
-              <CardDescription className="text-gray-400">
-                Choose the voice for your song
-              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-4 mb-6">
@@ -667,10 +641,7 @@ export default function CreateSongPage() {
         <div className="space-y-6">
           <Card className="bg-gray-900 border-gray-800">
             <CardHeader>
-              <CardTitle className="text-white">Review Your Song</CardTitle>
-              <CardDescription className="text-gray-400">
-                Make sure everything looks good before generating
-              </CardDescription>
+              <CardTitle className="text-white">Ready to create!</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -724,36 +695,29 @@ export default function CreateSongPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-r from-purple-500/20 to-blue-500/20 border-purple-500/30">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-white font-medium">Cost: 1 credit</div>
-                  <div className="text-gray-400 text-sm">
-                    Balance after: {creditsBalance - 1} credits
+          {isGenerating ? (
+            <GenerationProgress />
+          ) : (
+            <Card className="bg-gradient-to-r from-purple-500/20 to-blue-500/20 border-purple-500/30">
+              <CardContent className="p-6">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div>
+                    <div className="text-white font-medium">Cost: 1 credit</div>
+                    <div className="text-gray-400 text-sm">
+                      Balance after: {creditsBalance - 1} credits
+                    </div>
                   </div>
+                  <Button
+                    onClick={handleGenerate}
+                    disabled={creditsBalance <= 0}
+                    className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 px-10 py-6 text-lg font-semibold shadow-lg shadow-purple-500/25 w-full sm:w-auto"
+                  >
+                    Generate Song
+                  </Button>
                 </div>
-                <Button
-                  onClick={handleGenerate}
-                  disabled={creditsBalance <= 0 || isGenerating}
-                  className="bg-purple-500 hover:bg-purple-600 px-8 py-6 text-lg"
-                >
-                  {isGenerating ? (
-                    <span className="flex items-center gap-2">
-                      <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Generating...
-                    </span>
-                  ) : 'Generate Song'}
-                </Button>
-              </div>
-              {generationStatus && isGenerating && (
-                <p className="text-purple-300 text-sm mt-3">{generationStatus}</p>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
 
@@ -778,5 +742,68 @@ export default function CreateSongPage() {
         )}
       </div>
     </div>
+  );
+}
+
+const generationSteps = [
+  { message: 'Writing your song...', duration: 10000 },
+  { message: 'Composing the melody...', duration: 15000 },
+  { message: 'Adding instruments...', duration: 15000 },
+  { message: 'Final touches...', duration: 30000 },
+];
+
+function GenerationProgress() {
+  const [currentStep, setCurrentStep] = useState(0);
+
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    const advance = (step: number) => {
+      if (step < generationSteps.length - 1) {
+        timeout = setTimeout(() => {
+          setCurrentStep(step + 1);
+          advance(step + 1);
+        }, generationSteps[step].duration);
+      }
+    };
+    advance(0);
+    return () => clearTimeout(timeout);
+  }, []);
+
+  return (
+    <Card className="bg-gradient-to-br from-purple-500/10 to-blue-500/10 border-purple-500/30">
+      <CardContent className="py-12 px-6">
+        <div className="flex flex-col items-center text-center">
+          {/* Animated music note */}
+          <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-blue-500 rounded-2xl flex items-center justify-center mb-6 animate-bounce-note shadow-lg shadow-purple-500/30">
+            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+            </svg>
+          </div>
+
+          {/* Current step message */}
+          <h3 className="text-xl font-semibold text-white mb-2 animate-step-in" key={currentStep}>
+            {generationSteps[currentStep].message}
+          </h3>
+          <p className="text-gray-400 text-sm mb-6">This usually takes about a minute</p>
+
+          {/* Progress dots */}
+          <div className="flex items-center gap-2 mb-6">
+            {generationSteps.map((_, i) => (
+              <div
+                key={i}
+                className={`w-2 h-2 rounded-full transition-all duration-500 ${
+                  i <= currentStep ? 'bg-purple-400 scale-110' : 'bg-gray-600'
+                }`}
+              />
+            ))}
+          </div>
+
+          {/* Animated progress bar */}
+          <div className="w-full max-w-xs h-1.5 bg-gray-800 rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-purple-500 via-blue-500 to-purple-500 animate-progress-flow rounded-full" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
