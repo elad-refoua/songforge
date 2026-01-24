@@ -111,11 +111,23 @@ Respond in this exact JSON format:
         throw new Error('No content returned from Gemini');
       }
 
-      const parsed = JSON.parse(content);
+      let parsed: { title?: string; lyrics?: string };
+      try {
+        parsed = JSON.parse(content);
+      } catch {
+        // Gemini sometimes returns text with markdown code fences
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          parsed = JSON.parse(jsonMatch[0]);
+        } else {
+          // Last resort: treat entire content as lyrics
+          parsed = { title: topic.split(' ').slice(0, 4).join(' '), lyrics: content };
+        }
+      }
 
       return NextResponse.json({
-        title: parsed.title,
-        lyrics: parsed.lyrics,
+        title: parsed.title || topic.split(' ').slice(0, 4).join(' '),
+        lyrics: parsed.lyrics || content,
       });
     } else {
       // Fallback: Generate simple template lyrics without AI

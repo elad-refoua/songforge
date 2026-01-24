@@ -10,7 +10,7 @@ interface Song {
   id: string;
   title: string;
   lyrics: string | null;
-  status: 'pending' | 'generating' | 'completed' | 'failed';
+  status: 'pending' | 'generating_music' | 'converting_voice' | 'completed' | 'failed';
   audio_url: string | null;
   genre: string;
   mood: string;
@@ -45,6 +45,37 @@ export default function SongsPage() {
     }
   };
 
+  // Cleanup audio on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
+  const handleDownload = (song: Song) => {
+    if (!song.audio_url) return;
+    // Convert data URL to blob for reliable download
+    const byteString = atob(song.audio_url.split(',')[1]);
+    const mimeType = song.audio_url.split(';')[0].split(':')[1];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
+    }
+    const blob = new Blob([ab], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${song.title || 'song'}.mp3`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const handlePlay = (song: Song) => {
     if (!song.audio_url) return;
 
@@ -69,8 +100,10 @@ export default function SongsPage() {
     switch (status) {
       case 'completed':
         return <span className="px-2 py-0.5 rounded-full text-xs bg-green-500/20 text-green-400">Completed</span>;
-      case 'generating':
+      case 'generating_music':
         return <span className="px-2 py-0.5 rounded-full text-xs bg-yellow-500/20 text-yellow-400">Generating...</span>;
+      case 'converting_voice':
+        return <span className="px-2 py-0.5 rounded-full text-xs bg-blue-500/20 text-blue-400">Converting voice...</span>;
       case 'failed':
         return <span className="px-2 py-0.5 rounded-full text-xs bg-red-500/20 text-red-400">Failed</span>;
       default:
@@ -189,16 +222,15 @@ export default function SongsPage() {
 
                   {/* Download button */}
                   {song.status === 'completed' && song.audio_url && (
-                    <a
-                      href={song.audio_url}
-                      download={`${song.title}.mp3`}
+                    <button
+                      onClick={() => handleDownload(song)}
                       className="p-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white transition-colors"
                       title="Download"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                       </svg>
-                    </a>
+                    </button>
                   )}
                 </div>
 

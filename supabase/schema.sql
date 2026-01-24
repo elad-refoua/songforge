@@ -92,6 +92,9 @@ CREATE TABLE songs (
     prompt TEXT,
     song_mode song_mode NOT NULL,
     voice_mode voice_mode DEFAULT 'ai_default',
+    genre VARCHAR(100),
+    mood VARCHAR(100),
+    language VARCHAR(100),
     audio_url TEXT,
     instrumental_url TEXT,
     original_vocals_url TEXT,
@@ -105,6 +108,11 @@ CREATE TABLE songs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Migration for existing databases:
+-- ALTER TABLE songs ADD COLUMN IF NOT EXISTS genre VARCHAR(100);
+-- ALTER TABLE songs ADD COLUMN IF NOT EXISTS mood VARCHAR(100);
+-- ALTER TABLE songs ADD COLUMN IF NOT EXISTS language VARCHAR(100);
 
 -- Indexes
 CREATE INDEX idx_songs_user ON songs(user_id);

@@ -18,6 +18,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Topic and genre are required' }, { status: 400 });
     }
 
+    // Determine song_mode from lyrics/lyricsMode
+    const songMode = !lyrics && lyricsMode !== 'ai' ? 'instrumental'
+      : lyricsMode === 'manual' ? 'collaborative'
+      : 'ai_lyrics';
+
     const supabase = getServiceSupabase();
 
     // Get user and check credits
@@ -101,11 +106,12 @@ export async function POST(req: NextRequest) {
         user_id: user.id,
         title: songTitle,
         lyrics: lyrics || null,
-        status: 'generating',
+        status: 'generating_music',
         prompt: fullPrompt,
         genre: genre,
         mood: mood,
         language: language,
+        song_mode: songMode,
         voice_mode: voiceProfile ? 'single' : 'ai_default',
       })
       .select('id')
@@ -181,8 +187,9 @@ export async function POST(req: NextRequest) {
           user_id: user.id,
           amount: -1,
           balance_after: user.credits_balance - 1,
-          type: 'usage',
+          type: 'song_generation',
           description: `Song generation: ${songTitle}`,
+          song_id: song.id,
         });
 
       return NextResponse.json({ songId: song.id, status: 'completed' });
