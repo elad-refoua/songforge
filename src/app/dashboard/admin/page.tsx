@@ -68,7 +68,7 @@ export default function AdminPage() {
 
   if (loading) {
     return (
-      <div className="p-8">
+      <div className="p-4 md:p-8">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-gray-800 rounded w-48" />
           <div className="grid grid-cols-4 gap-4">
@@ -82,7 +82,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-white mb-2">Admin Panel</h1>
         <p className="text-gray-400">System overview and management</p>

@@ -138,7 +138,7 @@ export default function AdminPromptsPage() {
 
   if (loading) {
     return (
-      <div className="p-8">
+      <div className="p-4 md:p-8">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-gray-800 rounded w-48" />
           <div className="h-64 bg-gray-800 rounded-lg" />
@@ -148,7 +148,7 @@ export default function AdminPromptsPage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">System Prompts</h1>

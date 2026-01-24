@@ -13,7 +13,7 @@ AI Song Creation Application with Voice Cloning - Create songs in YOUR voice.
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | Next.js 14 (App Router) |
+| Frontend | Next.js 16 (App Router) |
 | UI | Tailwind CSS + shadcn/ui components |
 | Auth | NextAuth.js v5 (Google OAuth, JWT) |
 | Database | Supabase PostgreSQL (RLS enabled) |
@@ -67,7 +67,7 @@ AI Song Creation Application with Voice Cloning - Create songs in YOUR voice.
 | `/` | Landing page |
 | `/login` | Google OAuth login |
 | `/dashboard` | Main dashboard |
-| `/dashboard/create` | Song creation wizard (4 steps) |
+| `/dashboard/create` | Song creation wizard (5 steps: topic, style, lyrics, voice, generate) |
 | `/dashboard/songs` | User's generated songs |
 | `/dashboard/voices` | Voice cloning (placeholder) |
 | `/dashboard/settings` | User settings |
@@ -154,6 +154,28 @@ AI Song Creation Application with Voice Cloning - Create songs in YOUR voice.
 - Polished sidebar with gradient background
 - Added System Prompts to admin quick links (3-column grid)
 
+### Session 5: Bug Fixes, Pipeline & Mobile Responsiveness
+- Fixed critical song generation pipeline bugs:
+  - Status enum mismatch (`'generating'` → `'generating_music'`)
+  - Credit transaction type mismatch (`'usage'` → `'song_generation'`)
+  - Missing NOT NULL `song_mode` field in song INSERT
+  - Added `song_id` to credit transaction for audit trail
+- Added genre, mood, language columns to songs table (SQL migration on live DB)
+- Fixed songs page:
+  - Status badges match database enums (`generating_music`, `converting_voice`)
+  - Download button: convert base64 data URL to Blob for reliable download
+  - Audio cleanup on component unmount
+  - Added Suspense boundary for `useSearchParams()` (Next.js 16 requirement)
+- Fixed lyrics generation: JSON parse error handling for malformed Gemini responses
+- Updated `supabase/schema.sql` to include genre/mood/language columns
+- Mobile responsiveness:
+  - Added hamburger menu sidebar (slide-over overlay on mobile, static on desktop)
+  - Mobile top bar with logo and user avatar dropdown
+  - Responsive padding (`p-4 md:p-8`) on all dashboard pages
+  - Review summary grid: `grid-cols-1 sm:grid-cols-2`
+  - Sidebar closes on nav link click (mobile)
+- Updated CLAUDE.md with architecture docs and patterns
+
 ---
 
 ## Admin System
@@ -207,9 +229,12 @@ const ADMIN_EMAILS = ['eladrefoua@gmail.com', 'new-admin@example.com'];
 ## TODO / Future Work
 
 - [ ] Stripe integration for paid plans
-- [ ] Voice cloning with Kits.AI
-- [ ] Song playback in dashboard
+- [ ] Voice cloning with Kits.AI (provider code exists, UI partial)
+- [x] Song playback in dashboard (completed Session 5)
+- [x] Song download (completed Session 5)
+- [x] Mobile responsive layout (completed Session 5)
 - [ ] Duet/group mode
-- [ ] R2/S3 storage for audio files (currently base64)
+- [ ] R2/S3 storage for audio files (currently base64 in DB)
 - [ ] Rate limiting
 - [ ] Usage analytics
+- [ ] Song sharing (public songs)

@@ -6,6 +6,7 @@
  * Main layout for authenticated users with sidebar navigation.
  */
 
+import { useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -79,18 +80,78 @@ export default function DashboardLayout({
 }) {
   const { data: session, status } = useSession();
   const pathname = usePathname();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleSignOut = () => {
     signOut({ callbackUrl: '/login' });
   };
 
+  const closeSidebar = () => setSidebarOpen(false);
+
   return (
     <div className="min-h-screen bg-gray-950 flex">
+      {/* Mobile top bar */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-gray-900 border-b border-gray-800 flex items-center justify-between px-4 h-14">
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="p-2 text-gray-400 hover:text-white"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+        <Link href="/dashboard" className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
+            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+            </svg>
+          </div>
+          <span className="text-lg font-bold text-white">SongForge</span>
+        </Link>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="p-1">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={session?.user?.image || ''} />
+                <AvatarFallback className="bg-purple-500 text-sm">
+                  {session?.user?.name?.[0]?.toUpperCase() || 'U'}
+                </AvatarFallback>
+              </Avatar>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href="/dashboard/settings">Settings</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/dashboard/settings/billing">Billing</Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleSignOut} className="text-red-400">
+              Sign out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* Mobile sidebar backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          onClick={closeSidebar}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-64 bg-gradient-to-b from-gray-900 to-gray-950 border-r border-gray-800/50 flex flex-col">
+      <aside className={cn(
+        "fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-gray-900 to-gray-950 border-r border-gray-800/50 flex flex-col transition-transform duration-200 md:relative md:translate-x-0",
+        sidebarOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
         {/* Logo */}
-        <div className="p-6 border-b border-gray-800">
-          <Link href="/dashboard" className="flex items-center gap-3">
+        <div className="p-6 border-b border-gray-800 flex items-center justify-between">
+          <Link href="/dashboard" className="flex items-center gap-3" onClick={closeSidebar}>
             <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center">
               <svg
                 className="w-6 h-6 text-white"
@@ -108,6 +169,14 @@ export default function DashboardLayout({
             </div>
             <span className="text-xl font-bold text-white">SongForge</span>
           </Link>
+          <button
+            onClick={closeSidebar}
+            className="md:hidden p-1 text-gray-400 hover:text-white"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
 
         {/* Navigation */}
@@ -116,6 +185,7 @@ export default function DashboardLayout({
             <Link
               key={item.href}
               href={item.href}
+              onClick={closeSidebar}
               className={cn(
                 'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors',
                 pathname === item.href
@@ -134,6 +204,7 @@ export default function DashboardLayout({
               <div className="px-4 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Admin</div>
               <Link
                 href="/dashboard/admin"
+                onClick={closeSidebar}
                 className={cn(
                   'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors',
                   pathname.startsWith('/dashboard/admin')
@@ -161,7 +232,7 @@ export default function DashboardLayout({
                 {session?.user?.creditsBalance ?? 0}
               </div>
             )}
-            <Link href="/dashboard/settings/billing">
+            <Link href="/dashboard/settings/billing" onClick={closeSidebar}>
               <Button
                 variant="outline"
                 size="sm"
@@ -173,8 +244,8 @@ export default function DashboardLayout({
           </div>
         </div>
 
-        {/* User menu */}
-        <div className="p-4 border-t border-gray-800">
+        {/* User menu (desktop only) */}
+        <div className="p-4 border-t border-gray-800 hidden md:block">
           {status === 'loading' ? (
             <div className="flex items-center gap-3">
               <Skeleton className="h-10 w-10 rounded-full" />
@@ -223,7 +294,7 @@ export default function DashboardLayout({
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto pt-14 md:pt-0">
         {children}
       </main>
     </div>

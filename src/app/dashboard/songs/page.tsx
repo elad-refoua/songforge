@@ -21,7 +21,7 @@ interface Song {
 
 export default function SongsPage() {
   return (
-    <Suspense fallback={<div className="p-8 flex items-center justify-center min-h-[400px]"><div className="text-gray-400">Loading songs...</div></div>}>
+    <Suspense fallback={<div className="p-4 md:p-8 flex items-center justify-center min-h-[400px]"><div className="text-gray-400">Loading songs...</div></div>}>
       <SongsContent />
     </Suspense>
   );
@@ -131,14 +131,14 @@ function SongsContent() {
 
   if (loading) {
     return (
-      <div className="p-8 flex items-center justify-center min-h-[400px]">
+      <div className="p-4 md:p-8 flex items-center justify-center min-h-[400px]">
         <div className="text-gray-400">Loading songs...</div>
       </div>
     );
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">My Songs</h1>

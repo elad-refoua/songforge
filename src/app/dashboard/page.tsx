@@ -37,7 +37,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       {/* Welcome Header */}
       <div className="mb-10">
         <h1 className="text-4xl font-bold mb-2">
@@ -201,7 +201,7 @@ export default function DashboardPage() {
 
 function DashboardSkeleton() {
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       <div className="mb-10">
         <Skeleton className="h-10 w-72 mb-2" />
         <Skeleton className="h-6 w-48" />

@@ -217,7 +217,7 @@ export default function CreateSongPage() {
   };
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
+    <div className="p-4 md:p-8 max-w-4xl mx-auto">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-white mb-2">Create New Song</h1>
@@ -673,7 +673,7 @@ export default function CreateSongPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <span className="text-gray-400 text-sm">Topic</span>
                   <p className="text-white">{data.topic}</p>

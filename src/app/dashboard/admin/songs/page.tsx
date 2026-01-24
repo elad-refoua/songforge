@@ -64,7 +64,7 @@ export default function AdminSongsPage() {
   const totalPages = Math.ceil(total / 20);
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">All Songs</h1>
