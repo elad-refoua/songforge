@@ -84,6 +84,7 @@ export class SunoProvider {
         style: style || undefined,
         title: title || 'Untitled Song',
         model: 'V4_5ALL', // Use V4.5 All model
+        callBackUrl: 'https://songforge.vercel.app/api/callbacks/suno', // Required by API, we poll instead
       }),
     });
 
