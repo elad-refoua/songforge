@@ -25,9 +25,26 @@ export default function VoicesPage() {
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Recording state
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
+  const [recordedUrl, setRecordedUrl] = useState<string | null>(null);
+  const [inputMode, setInputMode] = useState<'file' | 'record'>('file');
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     fetchVoices();
   }, []);
+
+  // Cleanup recording URL on unmount
+  useEffect(() => {
+    return () => {
+      if (recordedUrl) URL.revokeObjectURL(recordedUrl);
+    };
+  }, [recordedUrl]);
 
   // Poll for processing voices
   useEffect(() => {
@@ -63,9 +80,76 @@ export default function VoicesPage() {
     }
   };
 
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunksRef.current.push(e.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        setRecordedBlob(blob);
+        if (recordedUrl) URL.revokeObjectURL(recordedUrl);
+        setRecordedUrl(URL.createObjectURL(blob));
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start(100);
+      setIsRecording(true);
+      setRecordingTime(0);
+      setRecordedBlob(null);
+      setRecordedUrl(null);
+      setSelectedFile(null);
+
+      timerRef.current = setInterval(() => {
+        setRecordingTime(t => t + 1);
+      }, 1000);
+    } catch (err: any) {
+      setError('Could not access microphone. Please allow microphone access.');
+      console.error('Recording error:', err);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    setIsRecording(false);
+  };
+
+  const discardRecording = () => {
+    if (recordedUrl) URL.revokeObjectURL(recordedUrl);
+    setRecordedBlob(null);
+    setRecordedUrl(null);
+    setRecordingTime(0);
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   const handleUpload = async () => {
-    if (!voiceName.trim() || !selectedFile) {
-      setError('Please provide a name and select an audio file');
+    if (!voiceName.trim()) {
+      setError('Please provide a name for your voice');
+      return;
+    }
+
+    const audioToUpload = inputMode === 'record' ? recordedBlob : selectedFile;
+    if (!audioToUpload) {
+      setError('Please select a file or record your voice');
       return;
     }
 
@@ -75,7 +159,12 @@ export default function VoicesPage() {
     try {
       const formData = new FormData();
       formData.append('name', voiceName.trim());
-      formData.append('audio', selectedFile);
+
+      if (inputMode === 'record' && recordedBlob) {
+        formData.append('audio', recordedBlob, 'recording.webm');
+      } else if (selectedFile) {
+        formData.append('audio', selectedFile);
+      }
 
       const res = await fetch('/api/voices', {
         method: 'POST',
@@ -86,14 +175,21 @@ export default function VoicesPage() {
       if (!res.ok) throw new Error(data.error || 'Upload failed');
 
       setVoices(prev => [data.voice, ...prev]);
-      setShowUploadForm(false);
-      setVoiceName('');
-      setSelectedFile(null);
+      resetForm();
     } catch (err: any) {
       setError(err.message);
     } finally {
       setIsUploading(false);
     }
+  };
+
+  const resetForm = () => {
+    setShowUploadForm(false);
+    setVoiceName('');
+    setSelectedFile(null);
+    discardRecording();
+    setInputMode('file');
+    setError(null);
   };
 
   const handleDelete = async (id: string) => {
@@ -152,8 +248,8 @@ export default function VoicesPage() {
     <div className="p-4 md:p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">My Voices</h1>
-          <p className="text-gray-400">
+          <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">My Voices</h1>
+          <p className="text-gray-400 text-sm">
             Clone your voice to sing in AI-generated songs
           </p>
         </div>
@@ -161,15 +257,15 @@ export default function VoicesPage() {
           onClick={() => setShowUploadForm(true)}
           className="bg-purple-500 hover:bg-purple-600"
         >
-          Upload Voice Sample
+          Add Voice
         </Button>
       </div>
 
-      {/* Upload Form */}
+      {/* Upload/Record Form */}
       {showUploadForm && (
         <Card className="bg-gray-900 border-gray-800 mb-6">
           <CardHeader>
-            <CardTitle className="text-white text-lg">Upload Voice Sample</CardTitle>
+            <CardTitle className="text-white text-lg">Add Voice Sample</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -181,41 +277,135 @@ export default function VoicesPage() {
                 className="bg-gray-800 border-gray-700 text-white"
               />
             </div>
-            <div>
-              <label className="text-sm text-gray-400 block mb-1.5">
-                Audio Sample (30-60 seconds of clean vocals, MP3/WAV)
-              </label>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="audio/mpeg,audio/wav,audio/mp3,audio/x-wav,.mp3,.wav"
-                onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                className="block w-full text-sm text-gray-400
-                  file:mr-4 file:py-2 file:px-4
-                  file:rounded-lg file:border-0
-                  file:text-sm file:font-medium
-                  file:bg-purple-500 file:text-white
-                  hover:file:bg-purple-600
-                  file:cursor-pointer cursor-pointer"
-              />
-              {selectedFile && (
-                <p className="text-xs text-gray-500 mt-1">
-                  {selectedFile.name} ({(selectedFile.size / (1024 * 1024)).toFixed(1)} MB)
-                </p>
-              )}
+
+            {/* Input Mode Toggle */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setInputMode('file'); discardRecording(); }}
+                className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
+                  inputMode === 'file'
+                    ? 'bg-purple-500 text-white'
+                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                }`}
+              >
+                Upload File
+              </button>
+              <button
+                onClick={() => { setInputMode('record'); setSelectedFile(null); }}
+                className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
+                  inputMode === 'record'
+                    ? 'bg-purple-500 text-white'
+                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                }`}
+              >
+                Record Now
+              </button>
             </div>
+
+            {/* File Upload */}
+            {inputMode === 'file' && (
+              <div>
+                <label className="text-sm text-gray-400 block mb-1.5">
+                  Audio Sample (30-60 seconds of clean vocals)
+                </label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="audio/mpeg,audio/wav,audio/mp3,audio/x-wav,audio/webm,.mp3,.wav,.webm"
+                  onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                  className="block w-full text-sm text-gray-400
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-lg file:border-0
+                    file:text-sm file:font-medium
+                    file:bg-purple-500 file:text-white
+                    hover:file:bg-purple-600
+                    file:cursor-pointer cursor-pointer"
+                />
+                {selectedFile && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    {selectedFile.name} ({(selectedFile.size / (1024 * 1024)).toFixed(1)} MB)
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Recording UI */}
+            {inputMode === 'record' && (
+              <div className="bg-gray-800 rounded-lg p-4">
+                {!isRecording && !recordedBlob && (
+                  <div className="text-center">
+                    <p className="text-gray-400 text-sm mb-4">
+                      Record 30-60 seconds of clean vocals
+                    </p>
+                    <Button
+                      onClick={startRecording}
+                      className="bg-red-500 hover:bg-red-600"
+                    >
+                      <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="6" />
+                      </svg>
+                      Start Recording
+                    </Button>
+                  </div>
+                )}
+
+                {isRecording && (
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-3 mb-4">
+                      <span className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
+                      <span className="text-white text-2xl font-mono">{formatTime(recordingTime)}</span>
+                    </div>
+                    <p className="text-gray-400 text-sm mb-4">
+                      {recordingTime < 30 ? `Keep going... (${30 - recordingTime}s minimum)` : 'You can stop now or keep recording'}
+                    </p>
+                    <Button
+                      onClick={stopRecording}
+                      variant="outline"
+                      className="border-red-500 text-red-400 hover:bg-red-500/10"
+                    >
+                      <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                        <rect x="6" y="6" width="12" height="12" />
+                      </svg>
+                      Stop Recording
+                    </Button>
+                  </div>
+                )}
+
+                {recordedBlob && !isRecording && (
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-white text-sm">Recording ({formatTime(recordingTime)})</span>
+                      <button
+                        onClick={discardRecording}
+                        className="text-red-400 hover:text-red-300 text-sm"
+                      >
+                        Discard
+                      </button>
+                    </div>
+                    <audio
+                      src={recordedUrl || undefined}
+                      controls
+                      className="w-full h-10"
+                      style={{ filter: 'invert(1)' }}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
             {error && <p className="text-red-400 text-sm">{error}</p>}
+
             <div className="flex gap-3">
               <Button
                 onClick={handleUpload}
-                disabled={isUploading || !voiceName.trim() || !selectedFile}
+                disabled={isUploading || !voiceName.trim() || (inputMode === 'file' ? !selectedFile : !recordedBlob)}
                 className="bg-purple-500 hover:bg-purple-600"
               >
                 {isUploading ? 'Uploading...' : 'Upload & Clone'}
               </Button>
               <Button
                 variant="outline"
-                onClick={() => { setShowUploadForm(false); setError(null); }}
+                onClick={resetForm}
                 className="border-gray-700 text-gray-300"
               >
                 Cancel
@@ -236,22 +426,22 @@ export default function VoicesPage() {
               <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-3">
                 <span className="text-white font-bold">1</span>
               </div>
-              <h4 className="text-white font-medium mb-1">Upload Sample</h4>
-              <p className="text-gray-400 text-sm">Record or upload 30-60 seconds of your voice</p>
+              <h4 className="text-white font-medium mb-1">Upload or Record</h4>
+              <p className="text-gray-400 text-sm">30-60 seconds of your voice</p>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-3">
                 <span className="text-white font-bold">2</span>
               </div>
               <h4 className="text-white font-medium mb-1">AI Processing</h4>
-              <p className="text-gray-400 text-sm">Our AI learns your unique voice characteristics</p>
+              <p className="text-gray-400 text-sm">We learn your voice characteristics</p>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-3">
                 <span className="text-white font-bold">3</span>
               </div>
               <h4 className="text-white font-medium mb-1">Create Songs</h4>
-              <p className="text-gray-400 text-sm">Generate songs that sound like you singing!</p>
+              <p className="text-gray-400 text-sm">Songs that sound like you!</p>
             </div>
           </div>
         </CardContent>
@@ -268,10 +458,10 @@ export default function VoicesPage() {
               </div>
               <h3 className="text-lg font-medium text-white mb-2">No voice profiles yet</h3>
               <p className="text-gray-400 mb-6">
-                Upload a voice sample to create your first voice clone
+                Add a voice sample to create your first voice clone
               </p>
               <Button onClick={() => setShowUploadForm(true)} className="bg-purple-500 hover:bg-purple-600">
-                Upload Voice Sample
+                Add Voice Sample
               </Button>
             </div>
           </CardContent>
