@@ -23,8 +23,8 @@ interface SunoTaskResponse {
 
 interface SunoClip {
   id: string;
-  audio_url: string;
-  stream_audio_url: string;
+  audioUrl: string;
+  streamAudioUrl: string;
   title: string;
   duration: number;
 }
@@ -143,8 +143,8 @@ export class SunoProvider {
         // Get the first clip's audio URL
         if (statusData.data.response?.sunoData && statusData.data.response.sunoData.length > 0) {
           const clip = statusData.data.response.sunoData[0];
-          // Prefer audio_url (downloadable), fallback to stream_audio_url
-          return clip.audio_url || clip.stream_audio_url;
+          // Prefer audioUrl (downloadable), fallback to streamAudioUrl
+          return clip.audioUrl || clip.streamAudioUrl;
         }
         throw new Error('No audio URL in completed response');
       }
