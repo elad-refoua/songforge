@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { getServiceSupabase } from '@/lib/db/supabase';
-import { getElevenLabsProvider } from '@/lib/providers/elevenlabs';
+import { getMusicProvider, getActiveMusicProviderType } from '@/lib/providers/music';
 import { getKitsAIProvider } from '@/lib/providers/kitsai';
 
 export async function POST(req: NextRequest) {
@@ -122,13 +122,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to create song record' }, { status: 500 });
     }
 
-    // Generate song with ElevenLabs
+    // Generate song with selected music provider
     try {
-      const elevenlabs = getElevenLabsProvider();
-      const audioBuffer = await elevenlabs.generateSong({
+      const musicProvider = await getMusicProvider();
+      const providerType = await getActiveMusicProviderType();
+      console.log(`Using music provider: ${providerType}`);
+
+      const audioBuffer = await musicProvider.generateSong({
         prompt: fullPrompt,
-        musicLengthMs: 50000,
-        forceInstrumental: !lyrics && lyricsMode !== 'ai',
+        lyrics: lyrics || undefined,
+        style: `${mood} ${genre}`,
+        title: songTitle,
+        instrumental: !lyrics && lyricsMode !== 'ai',
+        durationMs: 50000,
       });
 
       let finalAudio: ArrayBuffer = audioBuffer;
