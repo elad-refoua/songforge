@@ -121,7 +121,7 @@ export class SunoProvider {
       // Wait before polling (first iteration too, since generation takes time)
       await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
 
-      const statusResponse = await fetch(`${SUNO_API_URL}/api/v1/generate/record?taskId=${taskId}`, {
+      const statusResponse = await fetch(`${SUNO_API_URL}/api/v1/generate/record-info?taskId=${taskId}`, {
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
         },
