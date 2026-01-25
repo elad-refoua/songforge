@@ -17,23 +17,27 @@ interface SunoTaskResponse {
   code: number;
   msg: string;
   data: {
-    task_id: string;
+    taskId: string;
   };
+}
+
+interface SunoClip {
+  id: string;
+  audio_url: string;
+  stream_audio_url: string;
+  title: string;
+  duration: number;
 }
 
 interface SunoStatusResponse {
   code: number;
   msg: string;
   data: {
-    status: 'pending' | 'processing' | 'completed' | 'failed';
-    audio_url?: string;
-    clips?: Array<{
-      id: string;
-      audio_url: string;
-      title: string;
-      duration: number;
-    }>;
-    error?: string;
+    status: string; // PENDING, PROCESSING, SUCCESS, FAILED
+    errorMessage?: string;
+    response?: {
+      sunoData?: SunoClip[];
+    };
   };
 }
 
@@ -60,20 +64,26 @@ export class SunoProvider {
   async generateSong(params: SunoGenerateParams): Promise<ArrayBuffer> {
     const { prompt, lyrics, style, title, instrumental = false } = params;
 
-    // Start generation task
-    const taskResponse = await fetch(`${SUNO_API_URL}/v1/music/generate`, {
+    // Build the full prompt with lyrics if provided
+    let fullPrompt = prompt;
+    if (lyrics) {
+      fullPrompt = `${prompt}\n\n[Lyrics]\n${lyrics}`;
+    }
+
+    // Start generation task - using correct endpoint /api/v1/generate
+    const taskResponse = await fetch(`${SUNO_API_URL}/api/v1/generate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify({
-        prompt: prompt,
-        lyrics: lyrics || undefined,
-        style: style || undefined,
-        title: title || undefined,
+        customMode: true,
         instrumental: instrumental,
-        model: 'v3.5', // Use latest model
+        prompt: fullPrompt,
+        style: style || undefined,
+        title: title || 'Untitled Song',
+        model: 'V4_5ALL', // Use V4.5 All model
       }),
     });
 
@@ -84,11 +94,11 @@ export class SunoProvider {
 
     const taskData: SunoTaskResponse = await taskResponse.json();
 
-    if (taskData.code !== 0 && taskData.code !== 200) {
+    if (taskData.code !== 200) {
       throw new Error(`Suno API error: ${taskData.msg}`);
     }
 
-    const taskId = taskData.data.task_id;
+    const taskId = taskData.data.taskId;
 
     // Poll for completion
     const audioUrl = await this.pollForCompletion(taskId);
@@ -107,7 +117,10 @@ export class SunoProvider {
    */
   private async pollForCompletion(taskId: string): Promise<string> {
     for (let i = 0; i < MAX_POLL_ATTEMPTS; i++) {
-      const statusResponse = await fetch(`${SUNO_API_URL}/v1/music/task/${taskId}`, {
+      // Wait before polling (first iteration too, since generation takes time)
+      await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
+
+      const statusResponse = await fetch(`${SUNO_API_URL}/api/v1/generate/record?taskId=${taskId}`, {
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
         },
@@ -119,23 +132,27 @@ export class SunoProvider {
 
       const statusData: SunoStatusResponse = await statusResponse.json();
 
-      if (statusData.data.status === 'completed') {
+      if (statusData.code !== 200) {
+        throw new Error(`Status check error: ${statusData.msg}`);
+      }
+
+      const taskStatus = statusData.data.status;
+
+      if (taskStatus === 'SUCCESS' || taskStatus === 'completed') {
         // Get the first clip's audio URL
-        if (statusData.data.clips && statusData.data.clips.length > 0) {
-          return statusData.data.clips[0].audio_url;
-        }
-        if (statusData.data.audio_url) {
-          return statusData.data.audio_url;
+        if (statusData.data.response?.sunoData && statusData.data.response.sunoData.length > 0) {
+          const clip = statusData.data.response.sunoData[0];
+          // Prefer audio_url (downloadable), fallback to stream_audio_url
+          return clip.audio_url || clip.stream_audio_url;
         }
         throw new Error('No audio URL in completed response');
       }
 
-      if (statusData.data.status === 'failed') {
-        throw new Error(`Song generation failed: ${statusData.data.error || 'Unknown error'}`);
+      if (taskStatus === 'FAILED' || taskStatus === 'failed') {
+        throw new Error(`Song generation failed: ${statusData.data.errorMessage || 'Unknown error'}`);
       }
 
-      // Wait before polling again
-      await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
+      // Continue polling for PENDING, PROCESSING, etc.
     }
 
     throw new Error('Song generation timed out');
@@ -145,7 +162,7 @@ export class SunoProvider {
    * Get remaining credits
    */
   async getCredits(): Promise<number> {
-    const response = await fetch(`${SUNO_API_URL}/v1/account/credits`, {
+    const response = await fetch(`${SUNO_API_URL}/api/v1/generate/account`, {
       headers: {
         'Authorization': `Bearer ${this.apiKey}`,
       },
